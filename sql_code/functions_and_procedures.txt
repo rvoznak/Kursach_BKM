@@ -1,0 +1,142 @@
+Процедура на добавление данных о ученике:
+create or replace procedure add_student_procedure(name_st text, class_st int, description_st text, telephone_number_st text, tg_name_st text, chat_id_st int)
+	language plpgsql
+	as $$
+		begin
+	insert into students(name_s, class, description_s, telephone_number_s, tg_name_s, chat_id) 
+	values (name_st, class_st, description_st, telephone_number_st, tg_name_st, chat_id_st);
+	end;
+$$;
+
+Вызов процедуры: 
+call add_student_procedure ('Артем', 8, 'Пу-пу-пу', '89172263077', '@artem', '131823' );
+
+
+Процедура на добавление данных о преподователе:
+create or replace procedure add_teacher_procedure(name_te text, subject_te text, description_te text,fix_time_te time, price_te int, tg_name_te text, chat_id_te int)
+	language plpgsql
+	as $$
+		begin
+	insert into teachers(name_t, subject, description_t, fix_time, price, tg_name_t, chat_id) 
+	values (name_te, subject_te, description_te, fix_time_te, price_te, tg_name_te, chat_id_te);
+	end;
+$$;
+
+
+Вызов процедуры: 
+call add_teacher_procedure ('Сергей Норильский', 'Английский язык', '27 лет', '1:30', 300, '@nord', '632762' );
+
+
+Рейтинг преподователей (процедура):
+create or replace procedure rating_teacher_procedure(name_teacher text, rating_t int)
+	language plpgsql
+	as $$
+		begin
+	insert into rating_teacher (id_t, rating) 
+	values ((select id_t from teachers where name_t = name_teacher limit 1), rating_t);
+	end;
+$$;
+
+
+Вызов процедуры:
+call rating_teacher_procedure ('Максим', 3 );
+
+
+Функция для рачета рейтинга преподователей:
+DROP FUNCTION final_rating_teacher;
+CREATE or replace function final_rating_teacher(name_teacher text)
+RETURNS TABLE(average_value double precision) AS $$
+BEGIN
+    RETURN QUERY select avg(rt.rating) as average_value
+				from rating_teacher rt inner join teachers te
+				on rt.id_t = te.id_t
+				where te.name_t = name_teacher;
+END;
+$$ LANGUAGE plpgsql;
+
+
+Вызов функции: 
+select final_rating_teacher('Максим')
+
+
+Процедура для добавления уроков преподователем:
+create or replace procedure add_lesson_procedure(name_teacher text, date_l date, time_l time without time zone)
+language plpgsql
+as $$
+begin
+	insert into timetable (id_t, date_lesson, time_lesson) 
+	values ((select id_t from teachers where name_t = name_teacher limit 1), date_l, time_l);
+	end;
+$$;
+
+
+Вызов процедуры:
+call add_lesson_procedure('Иван', '2023-11-28', '20:15')
+
+
+Функция для вывода свободных окон преподователя:
+DROP FUNCTION view_free_lessons;
+CREATE or replace function view_free_lessons(name_teacher text)
+RETURNS TABLE(date_lesson date, time_lesson time without time zone) AS $$
+BEGIN
+    RETURN QUERY select tt.date_lesson, tt.time_lesson 
+			from timetable tt inner join teachers te
+			on tt.id_t = te.id_t
+			where tt.id_s is NULL and te.name_t = name_teacher
+			limit 10;
+END;
+$$ LANGUAGE plpgsql;
+
+
+Вызов функции:
+select view_free_lessons('Иван')
+
+
+Процедура для записи на занятие:
+create or replace procedure lesson_selection_procedure(name_s text, date_l date, time_l time without time zone)
+language plpgsql
+as $$
+begin
+	if (select id_s from timetable where date_lesson = date_l and time_lesson = time_l) is NULL then 
+		update timetable set id_s = (select s.id_s from students s left join timetable tt
+									on tt.id_s = s.id_s
+									where s.name_s = 'Ваня') 
+		where date_lesson = date_l and time_lesson = time_l;
+	end if;
+	end;
+$$;
+
+
+Вызов процедуры:
+call lesson_selection_procedure('Ваня', '2023-11-27', '09:00:00')
+
+
+Функция для поиска chat id по нику в тг учеников:
+DROP FUNCTION chat_id_student;
+CREATE or replace function chat_id_student(tg_name_st text)
+RETURNS TABLE(chat_id_students int) AS $$
+BEGIN
+    RETURN QUERY select chat_id from students where tg_name_s = tg_name_st limit 1;
+END;
+$$ LANGUAGE plpgsql;
+
+
+Вызов функции:
+select chat_id_student('@artem');
+
+
+Функция для поиска chat id по нику в тг учителей:
+DROP FUNCTION chat_id_teacher;
+CREATE or replace function chat_id_teacher(tg_name_st text)
+RETURNS TABLE(chat_id_teachers int) AS $$
+BEGIN
+    RETURN QUERY select chat_id from teachers where tg_name_t = tg_name_st limit 1;
+END;
+$$ LANGUAGE plpgsql;
+
+
+Вызов функции:
+select chat_id_teacher('@vanIvan1');
+
+
+ 
