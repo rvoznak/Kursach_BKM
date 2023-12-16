@@ -139,4 +139,38 @@ $$ LANGUAGE plpgsql;
 select chat_id_teacher('@vanIvan1');
 
 
+Процедура для связи ученика и учителя:
+-- create or replace procedure "connection_s_t"(tg_name_te text, tg_name_st text)
+-- 	language plpgsql
+-- 	as $$
+-- 		begin
+-- 	insert into students_teachers (id_t, id_s) 
+-- 	values ((select id_t from teachers where tg_name_t = tg_name_te ), (select id_s from students where tg_name_s = tg_name_st ));
+-- 	end;
+-- $$;
+
+
+Вызов процедуры:
+call connection_s_t('@RVoznyak','@vanIvan1');
+
+
+Функция для вывода учеников, написавших учителю:
+CREATE or replace function table_students(tg_name_te text)
+RETURNS TABLE(tg_name_student text, name_student text, class_student int, telephone_number_student text) AS $$
+BEGIN
+	RETURN QUERY select s.tg_name_s, s.name_s, s.class, s.telephone_number_s
+	from students s left join students_teachers st 
+	on s.id_s = st.id_s
+	left join teachers te
+	on st.id_t = te.id_t 
+	where te.tg_name_t = tg_name_te;
+END;
+$$ LANGUAGE plpgsql;
+
+
+Вывод функции:
+select * from table_students('@RVoznyak');
+
+
+
  
