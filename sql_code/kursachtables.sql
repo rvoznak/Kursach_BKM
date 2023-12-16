@@ -29,19 +29,6 @@ CREATE TABLE "public.students" (
 
 
 
-CREATE TABLE "public.timetable" (
-	"id_tt" serial NOT NULL,
-	"id_t" integer NOT NULL,
-	"id_s" integer NOT NULL,
-	"week_day" TEXT NOT NULL,
-	"time_lesson" TIME NOT NULL,
-	CONSTRAINT "timetable_pk" PRIMARY KEY ("id_tt")
-) WITH (
-  OIDS=FALSE
-);
-
-
-
 CREATE TABLE "public.rating_teacher" (
 	"id_rt" serial NOT NULL,
 	"id_t" integer NOT NULL,
@@ -75,10 +62,17 @@ CREATE TABLE "public.passwd_s" (
 
 
 
+create table "students_teachers" (
+	"id_st" serial NOT NULL ,
+	"id_t" integer  REFERENCES "teachers" (id_t),
+	"id_s" integer REFERENCES "students" (id_s),
+	PRIMARY KEY (id_st),
+	UNIQUE (id_t,id_s)
+) WITH (
+   OIDS=FALSE
+);
 
 
-ALTER TABLE "timetable" ADD CONSTRAINT "timetable_fk0" FOREIGN KEY ("id_t") REFERENCES "teachers"("id_t");
-ALTER TABLE "timetable" ADD CONSTRAINT "timetable_fk1" FOREIGN KEY ("id_s") REFERENCES "students"("id_s");
 
 ALTER TABLE "rating_teacher" ADD CONSTRAINT "rating_teacher_fk0" FOREIGN KEY ("id_t") REFERENCES "teachers"("id_t");
 
