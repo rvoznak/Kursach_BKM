@@ -222,20 +222,19 @@ namespace Bot1
             return new Tuple<List<string>, List<string>, List<string>, List<string>>(tg_name_s, name_s, telephone_number_s, description_s);
         }
 
-
-        /*private static int GetChatIdByUsername(string username)
+        public static long GetChatIdByUsernameTeachers(string username)
         {
             using (var conn = new NpgsqlConnection(connectionString))
             {
                 conn.Open();
-                using (var cmd = new NpgsqlCommand("SELECT chatid FROM users WHERE username = @username", conn))
+                using (var cmd = new NpgsqlCommand("SELECT chat_id FROM teachers WHERE tg_name_t = @username", conn))
                 {
                     cmd.Parameters.AddWithValue("username", username);
                     using (NpgsqlDataReader reader = cmd.ExecuteReader())
                     {
                         if (reader.Read())
                         {
-                            return reader.GetInt32(0);
+                            return reader.GetInt64(0);
                         }
                         else
                         {
@@ -244,10 +243,83 @@ namespace Bot1
                     }
                 }
             }
-        }*/
+        }
+
+        public static long GetChatIdByUsernameStudents(string username)
+        {
+            using (var conn = new NpgsqlConnection(connectionString))
+            {
+                conn.Open();
+                using (var cmd = new NpgsqlCommand("SELECT chat_id FROM students WHERE tg_name_s = @username", conn))
+                {
+                    cmd.Parameters.AddWithValue("username", username);
+                    using (NpgsqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            return reader.GetInt64(0);
+                        }
+                        else
+                        {
+                            return 0;
+                        }
+                    }
+                }
+            }
+        }
+
+        public static async Task StudentData(string username, Message message) // Просмотр аккаунта ученика
+        {
+
+            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+
+                using (NpgsqlCommand cmd = new NpgsqlCommand("call connection_s_t (@tg_name_te, @tg_name_st);", connection))
+                {
+                    cmd.Parameters.AddWithValue("tg_name_te", username);
+                    cmd.Parameters.AddWithValue("tg_name_st", "@" + message.Chat.Username);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+            return;
+        }
+
+        public static Tuple<List<string>, List<string>, List<int>, List<string>> ListStudents(Message message)
+        {
+            string sql = @"select * from table_students(@tg_name_t);";
+
+            List<string> tg_name_s = new List<string>();
+            List<string> name_s = new List<string>();
+            List<int> class_s = new List<int>();
+            List<string> telephone_number_s = new List<string>();
+
+            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+
+                using (NpgsqlCommand cmd = new NpgsqlCommand(sql, connection))
+                {
+                    cmd.Parameters.AddWithValue("tg_name_t", "@" + message.Chat.Username);
+                    NpgsqlDataReader reader = cmd.ExecuteReader(CommandBehavior.CloseConnection);
+
+                    if (reader.HasRows)
+                    {
+
+                        while (reader.Read())
+                        {
+                            tg_name_s.Add(reader.GetString(0));
+                            name_s.Add(reader.GetString(1));
+                            class_s.Add(reader.GetInt32(2));
+                            telephone_number_s.Add(reader.GetString(3));
+                        }
+                    }
+                }
+            }
+            return new Tuple<List<string>, List<string>, List<int>, List<string>>(tg_name_s, name_s, class_s, telephone_number_s);
+        }
     }
 }
-
 
             
 
