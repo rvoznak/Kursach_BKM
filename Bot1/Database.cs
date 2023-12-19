@@ -92,7 +92,12 @@ namespace Bot1
         {
             var chat_id = message.Chat.Id;
             string sql = @"delete from students where chat_id = @chat_id;
-                           delete from teachers where chat_id = @chat_id;";
+                           delete from teachers where chat_id = @chat_id;
+                           DELETE FROM students_teachers st 
+                           WHERE st.id_t IN (SELECT te.id_t FROM teachers te WHERE te.chat_id = @chat_id);
+                           DELETE FROM students_teachers st 
+                           WHERE st.id_s IN (SELECT s.id_t FROM students s WHERE s.chat_id = @chat_id);
+                           ";
 
             using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
             {
